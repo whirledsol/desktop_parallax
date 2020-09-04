@@ -1,17 +1,19 @@
 import os, winreg, math, sys
 from PIL import Image, ImageTk
-from PySide2.QtWidgets import QApplication,QLabel
+from PySide2.QtWidgets import QApplication,QLabel, QMainWindow
 from PySide2.QtGui import QScreen, QPixmap
-from PySide2.QtCore import QSize
+from PySide2.QtCore import QSize,Qt
 
 DESKTOP_PATH = os.path.expanduser("~/Desktop")
 
 def setup():
+    #start here
     IMG_PATH = get_img()
     print(f'Loading this desktop: {IMG_PATH}')
     create_window(IMG_PATH)
 
 def get_img():
+    #find the background image from the registry
     try:
         registry = winreg.ConnectRegistry(None,winreg.HKEY_CURRENT_USER)
         reg_key = winreg.OpenKey(registry,r"Control Panel\Desktop")
@@ -20,32 +22,49 @@ def get_img():
     except:
         print("Could not find Windows Desktop Background Path. Suggest feature to set as variable.")
         return None
-
-
-def scale_toScreen(desktop,qpix):
-    w,h = get_screen_dim(desktop)
+        
+def scale_qpix(qpix,w,h):
+    #scale the QPixmap
     imw = qpix.width()
     imh = qpix.height()
     scale_x = w/imw
     scale_y = h/imh
     scale = max(scale_x,scale_y)
     scaled_w = int(math.ceil(imw * scale))
-    print(f'{imw},{imh} => {w},{h} scale by {scale} to {scaled_w}')
-    return qpix.scaledToWidth(scaled_w)
+    scaled_h = int(math.ceil(imh * scale))
+    #print(f'{imw},{imh} => {w},{h} scale by {scale} to {scaled_w}')
+    return qpix.scaled(scaled_w,scaled_h),scaled_w,scaled_h
     #return qpix
 
+def get_center_coord(w,h,iw,ih,ow=0,oh=0):
+    #calculates the top-left coordinates so that iwxih is in the center of wxh
+    return int(round(w-iw)/2)+ow,int(round(h-ih)/2)+oh
+
+def get_center_diff(w,h,x,y):
+    #calculates diff from center
+    return int(round((w/2)-x)),int(round((h/2)-y))
+
 def get_screen_dim(desktop):
+    #get screen dimensions
     geo = desktop.screenGeometry()
     return geo.width(),geo.height()
 
 def create_window(IMG_PATH):
+    #initial window creation
     app = QApplication([])
-    desktop = app.desktop()
     qpix = QPixmap(IMG_PATH)
-    qpix = scale_toScreen(desktop,qpix)
-    label = QLabel()
+    w,h = get_screen_dim(app.desktop())
+    qpix,iw,ih = scale_qpix(qpix,w,h)
+    window = QMainWindow()
+    window.resize(w,h) 
+    #window.setWindowFlags(Qt.WindowStaysOnBottomHint | Qt.FramelessWindowHint)
+    label = QLabel(window)
     label.setPixmap(qpix)
-    label.show()
+    label.resize(iw,ih)
+    label.move(*get_center_coord(w,h,iw,ih))
+    window.show()
+
+
     sys.exit(app.exec_())
 
 
