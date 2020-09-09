@@ -1,16 +1,22 @@
 import os, winreg, math, sys
 from PIL import Image, ImageTk
-from PySide2.QtWidgets import QApplication,QLabel, QMainWindow
+from PySide2.QtWidgets import QApplication, QMainWindow
 from PySide2.QtGui import QScreen, QPixmap
 from PySide2.QtCore import QSize,Qt
+from QBackgroundImage import QBackgroundImage
 
 DESKTOP_PATH = os.path.expanduser("~/Desktop")
+
 
 def setup():
     #start here
     IMG_PATH = get_img()
     print(f'Loading this desktop: {IMG_PATH}')
     create_window(IMG_PATH)
+
+def on_mouse_move(e):
+    #mouse move
+    print(e)
 
 def get_img():
     #find the background image from the registry
@@ -36,13 +42,7 @@ def scale_qpix(qpix,w,h):
     return qpix.scaled(scaled_w,scaled_h),scaled_w,scaled_h
     #return qpix
 
-def get_center_coord(w,h,iw,ih,ow=0,oh=0):
-    #calculates the top-left coordinates so that iwxih is in the center of wxh
-    return int(round(w-iw)/2)+ow,int(round(h-ih)/2)+oh
 
-def get_center_diff(w,h,x,y):
-    #calculates diff from center
-    return int(round((w/2)-x)),int(round((h/2)-y))
 
 def get_screen_dim(desktop):
     #get screen dimensions
@@ -57,15 +57,11 @@ def create_window(IMG_PATH):
     qpix,iw,ih = scale_qpix(qpix,w,h)
     window = QMainWindow()
     window.resize(w,h) 
-    #window.setWindowFlags(Qt.WindowStaysOnBottomHint | Qt.FramelessWindowHint)
-    label = QLabel(window)
-    label.setPixmap(qpix)
-    label.resize(iw,ih)
-    label.move(*get_center_coord(w,h,iw,ih))
+    window.setWindowFlags(Qt.WindowStaysOnBottomHint | Qt.FramelessWindowHint)
+    bg = QBackgroundImage(window,w,h)
+    bg.setBackground(qpix,iw,ih)
     window.show()
 
-
     sys.exit(app.exec_())
-
 
 if __name__ == '__main__': setup()
